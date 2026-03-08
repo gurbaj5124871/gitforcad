@@ -1,0 +1,133 @@
+#!/usr/bin/env bash
+# dwg -> json
+# json -> dwg2
+# teigha dwg2 -> dxf just to confirm written DWG readability
+v=-v4
+case $1 in
+    -v*)
+        v="$1"
+        shift
+        ;;
+esac
+d="${1:-example_2000}"
+b="$(basename "$d" .dwg)"
+b="$(basename "$b" .DWG)"
+dir="$(dirname "$d")"
+r="$(basename "$dir")"
+exitcode=0
+
+case $dir in
+    *test/test-data)   ;;
+    *test/test-data/*) b="${b}_${r}" ;;
+    *td)               ;;
+    *td/*)             b="${b}_${r}" ;;
+    .)                 ;;
+    *)                 b="${b}_${r}" ;;
+esac
+case $r in
+    20*)      ;;
+    r9)       r=9 ;;
+    r11)      r=12 ;;
+    r1[0234]) r="${r:1}" ;;
+    *)  case $b in
+            *_20*)      r="${b:(-4)}" ;;
+            *_r9)       r=9           ;;
+            *_r11)      r=12          ;;
+            *_r1[0234]) r="${b:(-2)}" ;;
+            *_R20*)     r="${b:(-4)}" ;;
+        esac      ;;
+esac
+case $r in
+    9|10|11|12|13|14|2000|2004|2007|2010|2013|2018) ;;
+    *) make -s -C examples odaversion
+       r="$(examples/odaversion "$d")"
+       ;;
+esac
+
+# first create a dwg log to compare against
+# ./log "$v" "$d"
+rm "./$b.log" "./$b.min.json" "./$b.dwg" 2>/dev/null
+if ! ./json -m "-l$b.log" "$v" "$d"; then
+    exit 2
+fi
+if [ -f "$b.min.json" ]; then
+    if ! ./dwg -y "$v" "$b.min.json"; then
+        exit 1
+    fi
+fi
+
+if [ -f "$b.dwg" ] && [ -n "$r" ]; then
+    # teigha supports r9-r2018. r2.10: Unsupported early .dwg file version
+    can_teigha=1
+    case $(uname) in
+        Darwin)  TeighaFileConverter=/Applications/ODAFileConverter.app/Contents/MacOS/ODAFileConverter ;;
+        Linux)   TeighaFileConverter=/usr/bin/ODAFileConverter ;;
+        Windows) TeighaFileConverter=ODAFileConverter ;;
+        *)       can_teigha=0 ;;
+    esac
+    baseFileConverter=ODAFileConverter
+    if [ ! -x "$TeighaFileConverter" ]; then
+        case $(uname) in
+            Darwin)  TeighaFileConverter=/Applications/TeighaFileConverter.app/Contents/MacOS/TeighaFileConverter ;;
+            Linux)   TeighaFileConverter=/usr/bin/TeighaFileConverter ;;
+            Windows) TeighaFileConverter=TeighaFileConverter ;;
+        esac
+        baseFileConverter=TeighaFileConverter
+    fi
+    case $r in
+        2\.*)     can_teigha=0 ;;
+        1\.*)     can_teigha=0 ;;
+        11)       r=12 ;;
+    esac
+    # shellcheck disable=SC2086,SC2154
+    if [ -x "$TeighaFileConverter" ] && [ "$can_teigha" = "1" ]; then
+        echo timeout 30 "$baseFileConverter" . . "ACAD$r" DXF 0 1 "$b.dwg"
+        timeout 30 "$TeighaFileConverter" . . "ACAD$r" DXF 0 1 "$b.dwg" \
+                $ODAFileConverter_geometry >/dev/null 2>/dev/null
+        [ -f "$b.json.err" ] && mv "$b.json.err" "$b.json.err.old"
+        if [ -e "./$b.dxf.err" ]; then
+            echo "$d" >"$b.json.err"
+            cat "./$b.dxf.err" >>"$b.json.err"
+            rm -f "./$b.dxf.err"
+            cat "$b.json.err"
+            exitcode=1
+        fi
+    else
+        rm "$b.json.err" 2>/dev/null
+        if [ ! -x "$TeighaFileConverter" ]; then
+            echo "$baseFileConverter not installed"
+        fi
+    fi
+
+    ./log "-l$b.new.log" "$v" "$b.dwg"
+    log1="$b.log"
+    log2="$b.new.log"
+    echo diff -bu "log1" "$log2"
+    diff -bu "$log1" "$log2"
+
+    if [ -f "$log1" ] && [ -f "$log2" ]; then
+        grep -E '^Add entity' "$log1" >"$log1.tmp"
+        grep -E '^Add entity' "$log2" >"$log2.tmp"
+        if diff -bu0 -I'\[[0-9]\+\]' "$log1.tmp" "$log2.tmp" >/dev/null 2>/dev/null; then
+            echo entities roundtrip ok
+            entities_roundtrip_ok=1
+            rm -f "$log1.tmp" "$log2.tmp" 2>/dev/null
+        else
+            diff -bu0 -I'\[[0-9]\+\]' "$log1.tmp" "$log2.tmp" | grep -v '^@@'
+        fi
+        grep -E '^Add object' "$log1" >"$log1.tmp"
+        grep -E '^Add object' "$log2" >"$log2.tmp"
+        if diff -bu0 -I'\[[0-9]\+\]' "$log1.tmp" "$log2.tmp" >/dev/null 2>/dev/null; then
+            echo objects roundtrip ok
+            rm -f "$log1.tmp" "$log2.tmp" 2>/dev/null
+            if [ ! -f "$b.json.err" ] && [ -n "$entities_roundtrip_ok" ]; then
+                rm -f "$log2" "$b.dxf" "$b.dwg"
+            fi
+        else
+            diff -bu0 -I'\[[0-9]\+\]' "$log1.tmp" "$log2.tmp" | grep -v '^@@'
+        fi
+    fi
+
+    test -f "$b.json.err" && cat "$b.json.err"
+fi
+exit $exitcode

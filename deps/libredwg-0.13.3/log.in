@@ -1,0 +1,103 @@
+#!@BASH@
+# -*- mode: sh -*-
+# create -v4 logs for DWGs, you can override -v?
+srcdir="@srcdir@"
+top_builddir="@top_builddir@"
+timeout="@TIMEOUT_10@"
+TESTS_ENVIRONMENT="@AM_TESTS_ENVIRONMENT@"
+
+if [ -n "$VALGRIND" ] && [ -n "$LOG_COMPILER" ]; then
+    TESTPROG="$LOG_COMPILER $LOG_FLAGS"
+elif [ -n "@WINE@" ]; then
+    TESTPROG="@WINE@"
+elif [ -n "$TESTS_ENVIRONMENT" ]; then
+    TESTPROG="$TESTS_ENVIRONMENT @LTEXEC@"
+else
+    TESTPROG="@LTEXEC@"
+fi
+
+make -s -j4 -C src || exit 1
+make -s -j4 -C programs dwgread@EXEEXT@ || exit 1
+if [ -n "@DSYMUTIL@" ]; then
+    @DSYMUTIL@ programs/dwgread
+fi
+v=-v4
+# dummy to please shellcheck
+test -z "$v" && echo $top_builddir
+ob="$b"
+log=
+args=
+big=
+gerr=0
+for d in "$@"; do
+    # we do use bash
+    case $d in
+    -v*)
+        v="$d"
+        ;;
+    -l*)
+        log="$(echo "$d" | cut -c3-)"
+        ;;
+    --force-free)
+        args="$args $d"
+        ;;
+    --big)
+        timeout=
+        big=1
+        ;;
+    *)
+        if [ ! -f "$d" ]; then
+            if [ -f "$srcdir/test/test-data/$d" ]; then
+                d="$srcdir/test/test-data/$d"
+            else
+                if [ -f "$srcdir/test/test-data/$d.dwg" ]; then
+                    d="$srcdir/test/test-data/$d.dwg"
+                fi
+            fi
+        fi
+        if [ -f "$d" ]; then
+            if [ -n "$timeout" ]; then
+                filesize="$(wc -c <"$d")"
+                [ "$filesize" -gt 8000000 ] && timeout="@TIMEOUT_30@"
+            elif [ -z "$big" ] && [ -z "$timeout" ]; then
+                # reset timeout
+                filesize="$(wc -c <"$d")"
+                [ "$filesize" -lt 8000000 ] && timeout="@TIMEOUT_30@"
+            fi
+        fi
+        xd=$(dirname "$d")
+        dir=_$(basename "$xd")
+        if [ -z "$log" ]; then
+            case "$d" in
+            *to/*)
+                x1=$(dirname "$xd")
+                dir=_$(basename "$xd")_$(basename "$x1")
+                ;;
+            *test-old/*)
+                x1=$(dirname "$xd")
+                dir=_$(basename "$xd")_$(basename "$x1")
+                ;;
+            esac
+        fi
+        if [ "$dir" = "_test-data" ]; then dir=""; fi
+        if [ "$dir" = "_td" ]; then dir=""; fi
+        if [ "$dir" = "_." ]; then dir=""; fi
+        b="$(basename "$d" .dwg)"
+        b="$(basename "$b" .DWG)"
+        [ -z "$log" ] && log="$b$dir.log"
+        ori_timeout="$timeout"
+        echo "$timeout @LTEXEC@ programs/dwgread $args $v $d 2>$log"
+        # (sleep 12s; killall dwgread 2>/dev/null) &
+        # shellcheck disable=SC2086
+        $timeout $TESTPROG programs/dwgread $args "$v" "$d" 2>"$log"
+        err=$?
+        [ $err -gt $gerr ] && gerr=$err
+        timeout="$ori_timeout"
+        tail -n2 "$log"
+        log=
+        ;;
+    esac
+done
+v=
+b="$ob"
+if [ $gerr -gt 128 ]; then exit 1; fi

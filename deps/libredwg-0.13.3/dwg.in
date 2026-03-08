@@ -1,0 +1,163 @@
+#!/bin/sh
+# create -v3 logs and dwg's with dwgwrite from DXF, JSON or newer DWG
+srcdir="@srcdir@"
+top_builddir="@top_builddir@"
+CFLAGS="@CFLAGS@"
+timeout="@TIMEOUT_30@"
+TESTS_ENVIRONMENT="@AM_TESTS_ENVIRONMENT@"
+
+if [ -n "$VALGRIND" ] && [ -n "$LOG_COMPILER" ]; then
+    TESTPROG="$LOG_COMPILER $LOG_FLAGS"
+elif [ -n "@WINE@" ]; then
+    TESTPROG="@WINE@"
+elif [ -n "$TESTS_ENVIRONMENT" ]; then
+    TESTPROG="$TESTS_ENVIRONMENT @LTEXEC@"
+else
+    TESTPROG="@LTEXEC@"
+fi
+
+case "$CFLAGS" in
+*-DDEBUG_CLASSES*) timeout= ;;
+*) ;;
+esac
+make -s -j4 -C src
+make -s -j4 -C programs dwgwrite@EXEEXT@
+if [ -n "@DSYMUTIL@" ]; then
+    @DSYMUTIL@ programs/dwgwrite
+fi
+v=-v3
+# dummy to please shellcheck
+test -z "$v" && echo $top_builddir
+args=-y
+out=
+ob="$b"
+big=
+gerr=0
+
+for d in "$@"; do
+    case $d in
+    -y) ;; # the default
+    --as=*) args="$args $d" ;;
+    -Ijson)
+        args="$args $d"
+        ext=json
+        ;;
+    -Idxf)
+        args="$args $d"
+        ext=dxf
+        ;;
+    -Idxfb)
+        args="$args $d"
+        ext=dxfb
+        ;;
+    --force-free)
+        args="$args $d"
+        ;;
+    -v*)
+        v="$d"
+        ;;
+    --big)
+        timeout=
+        big=1
+        ;;
+    *)
+        if [ ! -f "$d" ]; then
+            if [ -f "$srcdir/test/test-data/$d" ]; then
+                d="$srcdir/test/test-data/$d"
+            elif [ -f "$srcdir/test/test-data/$d.json" ]; then
+                d="$srcdir/test/test-data/$d.json"
+                ext=json
+            elif [ -f "$srcdir/test/test-data/$d.dxf" ]; then
+                d="$srcdir/test/test-data/$d.dxf"
+                ext=dxf
+            elif [ -f "$srcdir/test/test-data/$d.dwg" ]; then
+                d="$srcdir/test/test-data/$d.dwg"
+                ext=dwg
+            fi
+        fi
+        if [ -n "$timeout" ]; then
+            filesize="$(wc -c <"$d")"
+            [ "$filesize" -gt 8000000 ] && timeout=
+        elif [ -z "$big" ] && [ -z "$timeout" ]; then
+            # reset timeout
+            filesize="$(wc -c <"$d")"
+            [ "$filesize" -lt 8000000 ] && timeout="@TIMEOUT_30@"
+        fi
+        xd=$(dirname "$d")
+        dir="_$(basename "$xd")"
+        if [ "$dir" = "_test-data" ]; then dir=""; fi
+        if [ "$dir" = "_td" ]; then dir=""; fi
+        if [ "$dir" = "_." ]; then dir=""; fi
+        if [ -z "$ext" ]; then
+            case $(basename "$d") in
+            *.dwg)
+                ext=dwg
+                b=$(basename "$d" ".$ext")
+                ;;
+            *.DWG)
+                ext=dwg
+                b=$(basename "$d" .DWG)
+                ;;
+            *.dxf)
+                ext=dxf
+                b=$(basename "$d" ".$ext")
+                ;;
+            *.DXF)
+                ext=dxf
+                b=$(basename "$d" .DXF)
+                ;;
+            *.dxfb)
+                ext=dxfb
+                b=$(basename "$d" ".$ext")
+                ;;
+            *.DXFB)
+                ext=dxfb
+                b=$(basename "$d" .DXFB)
+                ;;
+            *.min.json)
+                b=$(basename "$d" .min.json)
+                ext=json ;;
+            *.json)
+                ext=json
+                b=$(basename "$d" ".$ext")
+                ;;
+            *.JSON)
+                ext=json
+                b=$(basename "$d" .JSON)
+                ;;
+            *)
+                if [ "$(head -c1 "$d")" = "{" ]; then
+                    ext=json
+                    args="$args -Ijson"
+                elif [ "$(head -c4 "$d")" = "Auto" ]; then
+                    ext=dxfb
+                    args="$args -Idxfb"
+                elif [ "$(head -n1 "$d")" = "  0" ]; then
+                    ext=dxf
+                    args="$args -Idxf"
+                else
+                    echo "Illegal extension for $d"
+                    exit
+                fi
+                b=$(basename "$d" ."$ext")
+                ;;
+            esac
+        fi
+        log="$b$dir.$ext.log"
+        out="$b$dir.dwg"
+        ori_timeout="$timeout"
+        [ "$ext" = "dxf" ] && timeout="env ASAN_OPTIONS=detect_leaks=0 $timeout"
+        echo "$timeout $TESTPROG programs/dwgwrite $args $v -o $out $d 2>$log"
+        # shellcheck disable=SC2086
+        $timeout $TESTPROG programs/dwgwrite $args "$v" -o "$out" "$d" 2>"$log"
+        err=$?
+        [ $err -gt $gerr ] && gerr=$err
+        timeout="$ori_timeout"
+        tail -n2 "$log"
+        ;;
+    esac
+done
+v=
+args=
+b=$ob
+if [ $gerr -gt 128 ]; then exit 1; fi

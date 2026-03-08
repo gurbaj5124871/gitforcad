@@ -1,0 +1,153 @@
+#!/usr/bin/env bash
+# dwg -> dxf
+# teigha dxf -> dwg
+# dxf -> dwg2
+# teigha dwg2 -> dxf2
+v=-v4
+case $1 in
+    -v*)
+        v="$1"
+        shift
+        ;;
+esac
+d="${1:-example_2000}"
+b="$(basename "$d" .dwg)"
+dir="$(dirname "$d")"
+r="$(basename "$dir")"
+exitcode=0
+DEBUG_CLASSES=
+
+case $dir in
+    *test/test-data)   ;;
+    *test/test-data/*) b="${b}_${r}" ;;
+    *td)               ;;
+    *td/*)             b="${b}_${r}" ;;
+    .)                 ;;
+    *)                 b="${b}_${r}" ;;
+esac
+case $r in
+    20*)          ;;
+    r9)       r=9 ;;
+    r11)      r=12 ;;
+    r1[0234]) r="${r:1}" ;;
+    *)
+        case $b in
+            *_20*)      r="${b:(-4)}" ;;
+            *_r9)       r=9           ;;
+            *_r11)      r=12          ;;
+            *_r1[0234]) r="${b:(-2)}" ;;
+            *_R20*)     r="${b:(-4)}" ;;
+        esac
+        ;;
+esac
+case $r in
+    9|10|11|12|13|14|2000|2004|2007|2010|2013|2018) ;;
+    *) make -s -C examples odaversion
+       r="$(examples/odaversion "$d")"
+       ;;
+esac
+
+# first create a dwg log to compare against
+./log "-l$b.log.orig" "$v" "$d"
+rm "./$b.dxf" "./$b.dwg" 2>/dev/null
+
+if ! ./dxf -y "$v" "$d"; then
+    exit 2
+fi
+if [ -f "$b.dxf" ]; then
+    mv "./$b.log" "$b.dwg2dxf.log"
+
+    # teigha can only write from r12-r2018
+    can_teigha=1
+    case $(uname) in
+        Darwin)  TeighaFileConverter=/Applications/ODAFileConverter.app/Contents/MacOS/ODAFileConverter ;;
+        Linux)   TeighaFileConverter=/usr/bin/ODAFileConverter ;;
+        Windows) TeighaFileConverter=ODAFileConverter ;;
+    esac
+    baseFileConverter=ODAFileConverter
+    if [ ! -x "$TeighaFileConverter" ]; then
+        case $(uname) in
+            Darwin)  TeighaFileConverter=/Applications/TeighaFileConverter.app/Contents/MacOS/TeighaFileConverter ;;
+            Linux)   TeighaFileConverter=/usr/bin/TeighaFileConverter ;;
+            Windows) TeighaFileConverter=TeighaFileConverter ;;
+        esac
+        baseFileConverter=TeighaFileConverter
+    fi
+    case $r in
+        1\.*)    can_teigha=0 ;;
+        2\.*)    can_teigha=0 ;;
+        11)      r=12 ;;
+    esac
+    test -z "$r" && can_teigha=0
+
+    if [ -x "$TeighaFileConverter" ] && [ "$can_teigha" = "1" ]; then
+        echo timeout 30 "$baseFileConverter" . . "ACAD$r" DWG 0 1 "$b.dxf"
+        timeout 30 "$TeighaFileConverter" . . "ACAD$r" DWG 0 1 "$b.dxf" \
+                >/dev/null 2>/dev/null
+        if [ -e "./$b.dxf.err" ]; then
+            cat "$b.dxf.err"
+            exitcode=1
+        fi
+        mv -f "$b.dwg" "$b.oda.dwg"
+    fi
+    if ! ./dwg -y "$v" "$b.dxf"; then
+        exit 2
+    fi
+fi
+
+if [ -f "$b.dwg" ]; then
+    if [ -x "$TeighaFileConverter" ] && [ "$can_teigha" = "1" ]; then
+        echo timeout 30 "$baseFileConverter" . . "ACAD$r" DXF 0 1 "$b.dwg"
+        timeout 30 "$TeighaFileConverter" . . "ACAD$r" DXF 0 1 "$b.dwg" \
+                >/dev/null 2>/dev/null
+        if [ -e "./$b.dxf.err" ]; then
+            cat "$b.dxf.err"
+            exitcode=3
+        fi
+    else
+        rm "$b.dxf.err" 2>/dev/null
+        if [ ! -x "$TeighaFileConverter" ]; then
+            echo "$baseFileConverter not installed"
+        fi
+    fi
+
+    ./log "$v" "$b.dwg"
+    log1="$b.log.orig"
+    log2="$b.log"
+    echo diff -bu "log1" "$log2"
+    diff -I '^-(objref|found:)' -bu "$log1" "$log2"
+
+    test -f "$b.dxf.err" && cat "$b.dxf.err"
+
+    if [ -f "$log1" ] && [ -f "$log2" ]; then
+        # Really interesting is the Section BLOCKS here. vs BLOCK_HEADER
+        if grep -q '#define DEBUG_CLASSES' src/config.h; then
+            DEBUG_CLASSES=1
+        fi
+        if [ -z "$DEBUG_CLASSES" ]; then
+            # We dont write unstable entities yet. WIPEOUT is converted to POINT in encode, but skipped at out_dxf
+            grep -E '^Add entity' "$log1" |
+                grep -E -v 'entity (WIPEOUT|ARC_DIMENSION|HELIX|SECTIONOBJECT|UNKNOWN_ENT)' >"$log1.tmp"
+        else
+            grep -E '^Add entity' "$log1" |
+                grep -E -v 'entity UNKNOWN_ENT' >"$log1.tmp"
+        fi
+        grep -E '^Add entity' "$log2" >"$log2.tmp"
+        if diff -bu0 "$log1.tmp" "$log2.tmp" >/dev/null 2>/dev/null; then
+            echo entities roundtrip ok
+            rm "$log1.tmp" "$log2.tmp" 2>/dev/null
+        else
+            c1=$(grep -c entity "$log1.tmp")
+            c2=$(grep -c entity "$log2.tmp")
+            if [ "$c1" = "$c2" ]; then
+                echo entities roundtrip in different order
+                diff -I '^-(objref|found:)' -bu0 <(perl -lpe's/ \[.\d+\]//' "$log1.tmp" | sort -u) \
+                          <(perl -lpe's/ \[.\d+\]//' "$log2.tmp" | sort -u)
+            else
+                echo "$b roundtrip failed, $c1 vs $c2 entities"
+                diff -I '^-(objref|found:)' -bu0 "$log1.tmp" "$log2.tmp" | grep -v '^@@'
+            fi
+        fi
+    fi
+fi
+exit $exitcode

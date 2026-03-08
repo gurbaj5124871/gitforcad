@@ -1,0 +1,154 @@
+#!/bin/sh
+# create -v3 logs and dxf's with dwg2dxf/dxfwrite
+srcdir="@srcdir@"
+top_builddir="@top_builddir@"
+CFLAGS="@CFLAGS@"
+timeout="@TIMEOUT_30@"
+TESTS_ENVIRONMENT="@AM_TESTS_ENVIRONMENT@"
+
+if [ -n "$VALGRIND" ] && [ -n "$LOG_COMPILER" ]; then
+    TESTPROG="$LOG_COMPILER $LOG_FLAGS"
+elif [ -n "@WINE@" ]; then
+    TESTPROG="@WINE@"
+elif [ -n "$TESTS_ENVIRONMENT" ]; then
+    TESTPROG="$TESTS_ENVIRONMENT @LTEXEC@"
+else
+    TESTPROG="@LTEXEC@"
+fi
+
+case "$CFLAGS" in
+*-DDEBUG_CLASSES*) timeout= ;;
+*) ;;
+esac
+make -s -C src
+make -s -C programs dwg2dxf@EXEEXT@ dxfwrite@EXEEXT@
+if [ -n "@DSYMUTIL@" ]; then
+    @DSYMUTIL@ programs/dwg2dxf programs/dxfwrite
+fi
+v=-v3
+# dummy to please shellcheck
+test -z "$v" && echo $top_builddir
+# check for dash
+# shellcheck disable=SC2039,SC2161,SC3010
+[[ 1 ]] 2>/dev/null || DASH=1
+args=-y
+out=
+next_is_o=
+gerr=0
+
+for d in "$@"; do
+    if [ -n "$next_is_o" ]; then
+        out="$d"
+        next_is_o=
+    else
+        case $d in
+        -v*) v="$d" ;;
+        --as=*) args="$args $d" ;;
+        -m) args="$args $d" ;;
+        -b) args="$args $d" ;;
+        -Ijson) ext=json ;;
+        -Idxf) ext=dxf ;;
+        -Idxfb)
+            args="$args $d"
+            ext=dxf
+            ;;
+        -o) next_is_o=1 ;;
+        -o*)
+            if [ -n "$DASH" ]; then
+                out="$(echo "$d" | awk '{ string=substr($0, 3); print string; }')"
+            else
+                out="$(cut "$d" -c2-)"
+            fi
+            ;;
+        -y) ;;
+        *)
+            if [ ! -f "$d" ]; then
+                if [ -f "$srcdir/test/test-data/$d" ]; then
+                    d="$srcdir/test/test-data/$d"
+                elif [ -f "$srcdir/test/test-data/$d.dwg" ]; then
+                    d="$srcdir/test/test-data/$d.dwg"
+                    ext=dwg
+                elif [ -f "$srcdir/test/test-data/$d.json" ]; then
+                    d="$srcdir/test/test-data/$d.json"
+                    ext=json
+                elif [ -f "$srcdir/test/test-data/$d.dxf" ]; then
+                    d="$srcdir/test/test-data/$d.dxf"
+                    ext=dxf
+                fi
+            fi
+            xd=$(dirname "$d")
+            dir=_$(basename "$xd")
+            case "$d" in
+            *to/*)
+                x1=$(dirname "$xd")
+                dir=_$(basename "$xd")_$(basename "$x1")
+                ;;
+            *test-old/*)
+                x1=$(dirname "$xd")
+                dir=_$(basename "$xd")_$(basename "$x1")
+                ;;
+            esac
+            if [ "$dir" = "_test-data" ]; then dir=""; fi
+            if [ "$dir" = "_td" ]; then dir=""; fi
+            if [ "$dir" = "_." ]; then dir=""; fi
+            case $(basename "$d") in
+            *.dwg)
+                ext=dwg
+                b=$(basename "$d" .$ext)
+                ;;
+            *.DWG)
+                ext=dwg
+                b=$(basename "$d" .DWG)
+                ;;
+            *.dxf)
+                ext=dxf
+                b=$(basename "$d" .$ext)
+                ;;
+            *.DXF)
+                ext=dxf
+                b=$(basename "$d" .DXF)
+                ;;
+            *.json)
+                ext=json
+                b=$(basename "$d" .$ext)
+                ;;
+            *.JSON)
+                ext=json
+                b=$(basename "$d" .JSON)
+                ;;
+            *.dxfb)
+                ext=dxf
+                b=$(basename "$d" .dxfb)
+                ;;
+            *.DXFB)
+                ext=dxf
+                b=$(basename "$d" .DXFB)
+                ;;
+            *)
+                ext=dwg
+                b=$(basename "$d")
+                echo "Assume DWG file for $d"
+                ;;
+            esac
+            log="$b$dir.log"
+            [ -n "$out" ] || out="$b$dir.dxf"
+            if [ "$ext" = "dwg" ]; then
+                echo "$timeout $TESTPROG programs/dwg2dxf $args $v -o $out $d 2>$log"
+                # shellcheck disable=SC2086
+                $timeout $TESTPROG programs/dwg2dxf $args "$v" -o "$out" "$d" 2>"$log"
+                err=$?
+                [ $err -gt $gerr ] && gerr=$err
+            else
+                echo "$timeout $TESTPROG programs/dxfwrite $args $v -o $out $d 2>$log"
+                # shellcheck disable=SC2086
+                $timeout $TESTPROG programs/dxfwrite $args "$v" -o "$out" "$d" 2>"$log"
+                err=$?
+                [ $err -gt $gerr ] && gerr=$err
+            fi
+            tail -n2 "$log"
+            out=
+            ;;
+        esac
+    fi
+done
+if [ $gerr -gt 128 ]; then exit 1; fi

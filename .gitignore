@@ -1,0 +1,4 @@
+gitforcad
+gui/src-tauri/target
+gui/node_modules
+gui/dist
