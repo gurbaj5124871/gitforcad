@@ -1,4 +1,8 @@
-# ⚙ GitForCAD
+<p align="center">
+  <img src="./logo.png" alt="GitForCAD" width="180" />
+</p>
+
+# GitForCAD
 
 **Version control system designed for CAD files** — with git-like CLI and a desktop GUI.
 

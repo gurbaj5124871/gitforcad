@@ -27,7 +27,7 @@ export default function CommitLog({ commits, loading }: CommitLogProps) {
 
     return (
         <div className="commit-list animate-in">
-            {commits.map((commit, i) => (
+            {commits.map((commit, _i) => (
                 <div key={commit.hash} className="commit-item">
                     <div className="commit-dot" />
                     <div className="commit-info">

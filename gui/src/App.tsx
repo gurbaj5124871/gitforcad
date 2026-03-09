@@ -182,8 +182,8 @@ function App() {
   if (!isRepoOpen) {
     return (
       <div className="repo-selector">
-        <h1>⚙ GitForCAD</h1>
-        <p>Version control for CAD files — STL, DXF, OBJ and more</p>
+        <h1><img src="/logo.png" alt="GitForCAD" style={{ height: 48, verticalAlign: 'middle', marginRight: 12 }} />GitForCAD</h1>
+        <p>Version control for CAD files — DWG, STL, DXF, OBJ and more</p>
         <div className="repo-input-group">
           <input type="text" placeholder="/path/to/your/cad/project" value={pathInput}
             onChange={(e) => setPathInput(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && handleOpenRepo()} />
@@ -201,7 +201,7 @@ function App() {
     <div className="app-layout">
       <div className="top-bar">
         <div className="top-bar-left">
-          <span className="app-logo">⚙ GitForCAD</span>
+          <span className="app-logo">GitForCAD</span>
           <span className="repo-path">{repoPath}</span>
         </div>
         <div className="top-bar-right">
