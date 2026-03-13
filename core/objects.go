@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-// ObjectType represents the type of a gitforcad object.
+// ObjectType represents the type of a gitcad object.
 type ObjectType string
 
 const (
@@ -22,7 +22,7 @@ const (
 	CommitType ObjectType = "commit"
 )
 
-// Object is a generic gitforcad object.
+// Object is a generic gitcad object.
 type Object struct {
 	Type    ObjectType `json:"type"`
 	Content []byte     `json:"content"`

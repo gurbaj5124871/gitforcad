@@ -6,9 +6,9 @@ import (
 	"path/filepath"
 )
 
-const RepoDir = ".gitforcad"
+const RepoDir = ".gitcad"
 
-// InitRepo initializes a new gitforcad repository in the given directory.
+// InitRepo initializes a new gitcad repository in the given directory.
 func InitRepo(dir string) error {
 	repoPath := filepath.Join(dir, RepoDir)
 
@@ -42,7 +42,7 @@ func InitRepo(dir string) error {
 	return nil
 }
 
-// FindRepoRoot walks up from the given directory to find a .gitforcad repository.
+// FindRepoRoot walks up from the given directory to find a .gitcad repository.
 func FindRepoRoot(startDir string) (string, error) {
 	dir, err := filepath.Abs(startDir)
 	if err != nil {
@@ -57,19 +57,19 @@ func FindRepoRoot(startDir string) (string, error) {
 
 		parent := filepath.Dir(dir)
 		if parent == dir {
-			return "", fmt.Errorf("not a gitforcad repository (or any parent up to mount point)")
+			return "", fmt.Errorf("not a gitcad repository (or any parent up to mount point)")
 		}
 		dir = parent
 	}
 }
 
-// RepoPath returns the .gitforcad directory path for the given repo root.
+// RepoPath returns the .gitcad directory path for the given repo root.
 func RepoPath(repoRoot string, parts ...string) string {
 	args := append([]string{repoRoot, RepoDir}, parts...)
 	return filepath.Join(args...)
 }
 
-// IsRepo checks if the given directory is a gitforcad repository.
+// IsRepo checks if the given directory is a gitcad repository.
 func IsRepo(dir string) bool {
 	_, err := os.Stat(filepath.Join(dir, RepoDir))
 	return err == nil

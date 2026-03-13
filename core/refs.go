@@ -240,7 +240,7 @@ func cleanWorkingDir(repoRoot string, targetEntries map[string]string) error {
 			return err
 		}
 
-		// Skip .gitforcad directory
+		// Skip .gitcad directory
 		if info.IsDir() && info.Name() == RepoDir {
 			return filepath.SkipDir
 		}

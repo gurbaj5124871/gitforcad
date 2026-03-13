@@ -31,4 +31,4 @@ def process_image(input_path, output_path):
     print("Cleaned logo saved to", output_path)
 
 if __name__ == '__main__':
-    process_image('/Users/gurbajsingh/Documents/gitforcad/logo.png', '/tmp/logo_clean.png')
+    process_image('/Users/gurbajsingh/Documents/gitcad/logo.png', '/tmp/logo_clean.png')

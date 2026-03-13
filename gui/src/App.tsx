@@ -121,7 +121,7 @@ function App() {
     setLoading(true);
     setError('');
     try {
-      const { getStatus, getLog, getDiff, getBranches } = await import('./services/gitforcad');
+      const { getStatus, getLog, getDiff, getBranches } = await import('./services/gitcad');
       const [statusResult, logResult, diffResult, branchResult] = await Promise.allSettled([
         getStatus(repoPath), getLog(repoPath), getDiff(repoPath), getBranches(repoPath),
       ]);
@@ -142,7 +142,7 @@ function App() {
   const handleInitAndOpen = async () => {
     if (!pathInput.trim()) return;
     if (isTauri) {
-      try { const { initRepo } = await import('./services/gitforcad'); await initRepo(pathInput.trim()); } catch (e: any) { setError(e.message); return; }
+      try { const { initRepo } = await import('./services/gitcad'); await initRepo(pathInput.trim()); } catch (e: any) { setError(e.message); return; }
     }
     setRepoPath(pathInput.trim());
     setIsRepoOpen(true);
@@ -150,14 +150,14 @@ function App() {
 
   const handleCheckout = async (branch: string) => {
     if (isTauri) {
-      try { const { checkoutBranch } = await import('./services/gitforcad'); await checkoutBranch(repoPath, branch); await refresh(); } catch (e: any) { setError(e.message); }
+      try { const { checkoutBranch } = await import('./services/gitcad'); await checkoutBranch(repoPath, branch); await refresh(); } catch (e: any) { setError(e.message); }
     }
   };
 
   const handleCreateBranch = async () => {
     if (!newBranchName.trim()) return;
     if (isTauri) {
-      try { const { createBranch } = await import('./services/gitforcad'); await createBranch(repoPath, newBranchName.trim()); } catch (e: any) { setError(e.message); return; }
+      try { const { createBranch } = await import('./services/gitcad'); await createBranch(repoPath, newBranchName.trim()); } catch (e: any) { setError(e.message); return; }
     }
     setNewBranchName(''); setShowNewBranch(false);
     if (isTauri) await refresh();
@@ -166,7 +166,7 @@ function App() {
   const handleCommit = async () => {
     if (!commitMsg.trim()) return;
     if (isTauri) {
-      try { const { addFiles, commit } = await import('./services/gitforcad'); await addFiles(repoPath, ['.']); await commit(repoPath, commitMsg.trim()); } catch (e: any) { setError(e.message); return; }
+      try { const { addFiles, commit } = await import('./services/gitcad'); await addFiles(repoPath, ['.']); await commit(repoPath, commitMsg.trim()); } catch (e: any) { setError(e.message); return; }
     }
     setCommitMsg(''); setShowCommit(false);
     if (isTauri) await refresh();
@@ -174,7 +174,7 @@ function App() {
 
   const handleMerge = async (branch: string) => {
     if (isTauri) {
-      try { const { mergeBranch } = await import('./services/gitforcad'); await mergeBranch(repoPath, branch); await refresh(); } catch (e: any) { setError(e.message); }
+      try { const { mergeBranch } = await import('./services/gitcad'); await mergeBranch(repoPath, branch); await refresh(); } catch (e: any) { setError(e.message); }
     }
   };
 
@@ -182,7 +182,7 @@ function App() {
   if (!isRepoOpen) {
     return (
       <div className="repo-selector">
-        <h1><img src="/logo.png" alt="GitForCAD" style={{ height: 48, verticalAlign: 'middle', marginRight: 12 }} />GitForCAD</h1>
+        <h1><img src="/logo.png" alt="GitCAD" style={{ height: 48, verticalAlign: 'middle', marginRight: 12 }} />GitCAD</h1>
         <p>Version control for CAD files — DWG, STL, DXF, OBJ and more</p>
         <div className="repo-input-group">
           <input type="text" placeholder="/path/to/your/cad/project" value={pathInput}
@@ -191,7 +191,7 @@ function App() {
           <button className="btn" onClick={handleInitAndOpen}>Init & Open</button>
         </div>
         {error && <p style={{ color: '#f85149', marginTop: 8 }}>{error}</p>}
-        <p style={{ fontSize: 12, color: '#6e7681', marginTop: 16 }}>Enter a path to a gitforcad repository, or initialize a new one</p>
+        <p style={{ fontSize: 12, color: '#6e7681', marginTop: 16 }}>Enter a path to a gitcad repository, or initialize a new one</p>
       </div>
     );
   }
@@ -201,7 +201,7 @@ function App() {
     <div className="app-layout">
       <div className="top-bar">
         <div className="top-bar-left">
-          <span className="app-logo">GitForCAD</span>
+          <span className="app-logo">GitCAD</span>
           <span className="repo-path">{repoPath}</span>
         </div>
         <div className="top-bar-right">
@@ -306,7 +306,7 @@ function App() {
           <div className="status-indicator"><div className="status-dot" /><span>branch: {currentBranch}</span></div>
           <span>{commits.length} commit(s)</span>
         </div>
-        <div className="status-bar-right"><span>GitForCAD v0.1.0</span></div>
+        <div className="status-bar-right"><span>GitCAD v0.1.0</span></div>
       </div>
     </div>
   );

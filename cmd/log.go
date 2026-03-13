@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/fatih/color"
-	"github.com/gurbaj5124871/gitforcad/core"
+	"github.com/gurbaj5124871/gitcad/core"
 	"github.com/spf13/cobra"
 )
 

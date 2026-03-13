@@ -4,14 +4,14 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/gurbaj5124871/gitforcad/core"
+	"github.com/gurbaj5124871/gitcad/core"
 	"github.com/spf13/cobra"
 )
 
 var initCmd = &cobra.Command{
 	Use:   "init",
-	Short: "Initialize a new gitforcad repository",
-	Long:  "Create a new gitforcad repository in the current directory with the default 'main' branch.",
+	Short: "Initialize a new gitcad repository",
+	Long:  "Create a new gitcad repository in the current directory with the default 'main' branch.",
 	Args:  cobra.NoArgs,
 	Run: func(cmd *cobra.Command, args []string) {
 		cwd, err := os.Getwd()
@@ -25,7 +25,7 @@ var initCmd = &cobra.Command{
 			os.Exit(1)
 		}
 
-		fmt.Printf("Initialized empty gitforcad repository in %s/.gitforcad/\n", cwd)
+		fmt.Printf("Initialized empty gitcad repository in %s/.gitcad/\n", cwd)
 	},
 }
 

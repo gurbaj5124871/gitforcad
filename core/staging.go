@@ -71,7 +71,7 @@ func AddToIndex(repoRoot string, filePaths []string) error {
 					return err
 				}
 				if info.IsDir() {
-					// Skip .gitforcad directory
+					// Skip .gitcad directory
 					if info.Name() == RepoDir {
 						return filepath.SkipDir
 					}

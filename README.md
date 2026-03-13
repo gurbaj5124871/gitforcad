@@ -1,25 +1,25 @@
 <p align="center">
-  <img src="./logo.png" alt="GitForCAD" width="180" />
+  <img src="./logo.png" alt="GitCAD" width="180" />
 </p>
 
-# GitForCAD
+# GitCAD
 
 **Version control system designed for CAD files** — with git-like CLI and a desktop GUI.
 
 Supports DWG, STL, DXF, and OBJ files with intelligent geometry-aware diffing. Shows what changed in your 3D models and architectural floor plans with red (removed) and green (added) highlighting.
 
-![GitForCAD Desktop GUI showing DWG diffing](./screenshot.png)
+![GitCAD Desktop GUI showing DWG diffing](./screenshot.png)
 
 ## Quick Start
 
 ### Build the CLI
 
 ```bash
-cd /path/to/gitforcad
-go build -o gitforcad .
+cd /path/to/gitcad
+go build -o gitcad .
 ```
 
-This produces a single `gitforcad` binary. Add it to your PATH:
+This produces a single `gitcad` binary. Add it to your PATH:
 
 ```bash
 export PATH=$PWD:$PATH
@@ -30,40 +30,40 @@ export PATH=$PWD:$PATH
 ```bash
 # Initialize a new repository
 mkdir my-cad-project && cd my-cad-project
-gitforcad init
+gitcad init
 
 # Add and commit files
-gitforcad add model.stl drawing.dxf
-gitforcad commit -m "Initial design"
+gitcad add model.stl drawing.dxf
+gitcad commit -m "Initial design"
 
 # Create a branch and make changes
-gitforcad branch feature-chamfer
-gitforcad checkout feature-chamfer
+gitcad branch feature-chamfer
+gitcad checkout feature-chamfer
 
 # Edit your CAD files, then see what changed
-gitforcad diff          # Red/green colored output
+gitcad diff          # Red/green colored output
 
 # Commit and merge back
-gitforcad add .
-gitforcad commit -m "Added chamfer to edge"
-gitforcad checkout main
-gitforcad merge feature-chamfer
+gitcad add .
+gitcad commit -m "Added chamfer to edge"
+gitcad checkout main
+gitcad merge feature-chamfer
 ```
 
 ### All Commands
 
 | Command | Description |
 |---------|-------------|
-| `gitforcad init` | Initialize repository (default: `main` branch) |
-| `gitforcad add <files>` | Stage files for commit |
-| `gitforcad commit -m "msg"` | Commit staged changes |
-| `gitforcad status` | Show working tree status |
-| `gitforcad log [-n N]` | Show commit history |
-| `gitforcad branch [name]` | List or create branches |
-| `gitforcad branch -d name` | Delete a branch |
-| `gitforcad checkout <branch>` | Switch branches |
-| `gitforcad diff [file]` | Show changes with red/green coloring |
-| `gitforcad merge <branch>` | Merge branch into current |
+| `gitcad init` | Initialize repository (default: `main` branch) |
+| `gitcad add <files>` | Stage files for commit |
+| `gitcad commit -m "msg"` | Commit staged changes |
+| `gitcad status` | Show working tree status |
+| `gitcad log [-n N]` | Show commit history |
+| `gitcad branch [name]` | List or create branches |
+| `gitcad branch -d name` | Delete a branch |
+| `gitcad checkout <branch>` | Switch branches |
+| `gitcad diff [file]` | Show changes with red/green coloring |
+| `gitcad merge <branch>` | Merge branch into current |
 
 ## Desktop GUI (Tauri)
 
@@ -95,7 +95,7 @@ This produces:
 
 ## CAD-Aware Diffing
 
-GitForCAD understands CAD file formats:
+GitCAD understands CAD file formats:
 
 | Format | What's Compared |
 |--------|----------------|
@@ -109,7 +109,7 @@ GitForCAD understands CAD file formats:
 ## Architecture
 
 ```
-gitforcad/
+gitcad/
 ├── main.go          # CLI entry point
 ├── cmd/             # Cobra CLI commands
 ├── core/            # VCS engine (objects, staging, refs, merge)
@@ -119,12 +119,12 @@ gitforcad/
 
 ### Storage Model
 
-Like Git, GitForCAD uses content-addressable storage:
+Like Git, GitCAD uses content-addressable storage:
 
 - **Blobs**: File content compressed with zlib, addressed by SHA-256
 - **Trees**: Directory listings mapping names to blob/tree hashes
 - **Commits**: Tree hash + parent(s) + author + timestamp + message
-- **Objects stored at**: `.gitforcad/objects/<hash[:2]>/<hash[2:]>`
+- **Objects stored at**: `.gitcad/objects/<hash[:2]>/<hash[2:]>`
 
 ## License
 

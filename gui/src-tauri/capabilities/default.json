@@ -12,8 +12,8 @@
       "identifier": "shell:allow-execute",
       "allow": [
         {
-          "name": "gitforcad",
-          "cmd": "gitforcad",
+          "name": "gitcad",
+          "cmd": "gitcad",
           "args": true
         }
       ]

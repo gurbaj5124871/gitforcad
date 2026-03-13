@@ -1,8 +1,8 @@
 {
   "$schema": "../node_modules/@tauri-apps/cli/config.schema.json",
-  "productName": "GitForCAD",
+  "productName": "GitCAD",
   "version": "0.1.0",
-  "identifier": "com.gitforcad.app",
+  "identifier": "com.gitcad.app",
   "build": {
     "frontendDist": "../dist",
     "devUrl": "http://localhost:5173",
@@ -12,7 +12,7 @@
   "app": {
     "windows": [
       {
-        "title": "GitForCAD — Version Control for CAD Files",
+        "title": "GitCAD — Version Control for CAD Files",
         "width": 1400,
         "height": 900,
         "minWidth": 900,

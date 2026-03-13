@@ -125,7 +125,7 @@ func Merge(repoRoot, branchName string) (*MergeResult, error) {
 	}
 
 	commitHash, err := WriteCommit(repoRoot, treeHash, []string{currentHash, targetHash},
-		"gitforcad", fmt.Sprintf("Merge branch '%s' into %s", branchName, currentBranch))
+		"gitcad", fmt.Sprintf("Merge branch '%s' into %s", branchName, currentBranch))
 	if err != nil {
 		return nil, err
 	}

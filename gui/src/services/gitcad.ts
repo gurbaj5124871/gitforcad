@@ -36,10 +36,10 @@ export interface BranchInfo {
 
 // ── Tauri shell execution ──
 
-async function runGitForCAD(args: string[], cwd: string): Promise<string> {
+async function runGitCAD(args: string[], cwd: string): Promise<string> {
     // Dynamic import to avoid loading Tauri modules in browser
     const { Command } = await import('@tauri-apps/plugin-shell');
-    const cmd = Command.create('gitforcad', args, { cwd });
+    const cmd = Command.create('gitcad', args, { cwd });
     const output = await cmd.execute();
     if (output.code !== 0) {
         throw new Error(output.stderr || `Command failed with code ${output.code}`);
@@ -133,7 +133,7 @@ export async function getStatus(repoPath: string): Promise<{ branch: string; fil
         return { branch: 'main', files: [...MOCK_STATUS_FILES] };
     }
 
-    const output = await runGitForCAD(['status'], repoPath);
+    const output = await runGitCAD(['status'], repoPath);
     const lines = output.split('\n');
     const files: StatusFile[] = [];
     let branch = 'main';
@@ -166,7 +166,7 @@ export async function getLog(repoPath: string): Promise<CommitInfo[]> {
     if (!isTauri) return [...MOCK_COMMITS];
 
     try {
-        const output = await runGitForCAD(['log'], repoPath);
+        const output = await runGitCAD(['log'], repoPath);
         const commits: CommitInfo[] = [];
         const blocks = output.split(/(?=commit )/);
 
@@ -200,14 +200,14 @@ export async function getDiff(repoPath: string): Promise<DiffResult[]> {
     if (!isTauri) return [...MOCK_DIFFS];
 
     try {
-        const output = await runGitForCAD(['diff'], repoPath);
+        const output = await runGitCAD(['diff'], repoPath);
         const results: DiffResult[] = [];
-        const blocks = output.split(/(?=diff --gitforcad )/);
+        const blocks = output.split(/(?=diff --gitcad )/);
 
         for (const block of blocks) {
-            if (!block.trim() || !block.startsWith('diff --gitforcad')) continue;
+            if (!block.trim() || !block.startsWith('diff --gitcad')) continue;
             const lines = block.trim().split('\n');
-            const headerMatch = lines[0].match(/diff --gitforcad\s+(.+)/);
+            const headerMatch = lines[0].match(/diff --gitcad\s+(.+)/);
             if (!headerMatch) continue;
 
             const filePath = headerMatch[1];
@@ -250,7 +250,7 @@ export async function getBranches(repoPath: string): Promise<BranchInfo[]> {
     if (!isTauri) return [...MOCK_BRANCHES];
 
     try {
-        const output = await runGitForCAD(['branch'], repoPath);
+        const output = await runGitCAD(['branch'], repoPath);
         const branches: BranchInfo[] = [];
         for (const line of output.split('\n')) {
             const trimmed = line.trim();
@@ -267,30 +267,30 @@ export async function getBranches(repoPath: string): Promise<BranchInfo[]> {
 
 export async function checkoutBranch(repoPath: string, branch: string): Promise<string> {
     if (!isTauri) return `Switched to branch '${branch}'`;
-    return runGitForCAD(['checkout', branch], repoPath);
+    return runGitCAD(['checkout', branch], repoPath);
 }
 
 export async function createBranch(repoPath: string, name: string): Promise<string> {
     if (!isTauri) return `Created branch '${name}'`;
-    return runGitForCAD(['branch', name], repoPath);
+    return runGitCAD(['branch', name], repoPath);
 }
 
 export async function addFiles(repoPath: string, files: string[]): Promise<string> {
     if (!isTauri) return 'added files';
-    return runGitForCAD(['add', ...files], repoPath);
+    return runGitCAD(['add', ...files], repoPath);
 }
 
 export async function commit(repoPath: string, message: string): Promise<string> {
     if (!isTauri) return `[main abc123] ${message}`;
-    return runGitForCAD(['commit', '-m', message], repoPath);
+    return runGitCAD(['commit', '-m', message], repoPath);
 }
 
 export async function mergeBranch(repoPath: string, branch: string): Promise<string> {
     if (!isTauri) return `Merged branch '${branch}'`;
-    return runGitForCAD(['merge', branch], repoPath);
+    return runGitCAD(['merge', branch], repoPath);
 }
 
 export async function initRepo(repoPath: string): Promise<string> {
-    if (!isTauri) return 'Initialized empty gitforcad repository';
-    return runGitForCAD(['init'], repoPath);
+    if (!isTauri) return 'Initialized empty gitcad repository';
+    return runGitCAD(['init'], repoPath);
 }

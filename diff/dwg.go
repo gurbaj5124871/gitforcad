@@ -84,7 +84,7 @@ func writeTempDWG(content []byte) (string, error) {
 
 	hash := sha256.Sum256(content)
 	hashStr := hex.EncodeToString(hash[:10])
-	tmpPath := filepath.Join(os.TempDir(), fmt.Sprintf("gitforcad_%s.dwg", hashStr))
+	tmpPath := filepath.Join(os.TempDir(), fmt.Sprintf("gitcad_%s.dwg", hashStr))
 
 	if err := ioutil.WriteFile(tmpPath, content, 0644); err != nil {
 		return "", err

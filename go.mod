@@ -1,4 +1,4 @@
-module github.com/gurbaj5124871/gitforcad
+module github.com/gurbaj5124871/gitcad
 
 go 1.24.5
 

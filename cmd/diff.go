@@ -8,8 +8,8 @@ import (
 	"sort"
 
 	"github.com/fatih/color"
-	"github.com/gurbaj5124871/gitforcad/core"
-	"github.com/gurbaj5124871/gitforcad/diff"
+	"github.com/gurbaj5124871/gitcad/core"
+	"github.com/gurbaj5124871/gitcad/diff"
 	"github.com/spf13/cobra"
 )
 
@@ -139,7 +139,7 @@ For text files, shows line-by-line differences.`,
 			hasDiff = true
 
 			// Print header
-			fmt.Printf("%s %s\n", cyanFn("diff --gitforcad"), cyanFn(filePath))
+			fmt.Printf("%s %s\n", cyanFn("diff --gitcad"), cyanFn(filePath))
 
 			if result.IsCAD {
 				fmt.Printf("%s %s\n", yellowFn("CAD format:"), yellowFn(result.FileType))

@@ -8,7 +8,7 @@ import (
 	"sort"
 
 	"github.com/fatih/color"
-	"github.com/gurbaj5124871/gitforcad/core"
+	"github.com/gurbaj5124871/gitcad/core"
 	"github.com/spf13/cobra"
 )
 
@@ -129,7 +129,7 @@ var statusCmd = &cobra.Command{
 
 		if len(unstaged) > 0 {
 			fmt.Println("\nChanges not staged for commit:")
-			fmt.Println("  (use \"gitforcad add <file>...\" to update what will be committed)")
+			fmt.Println("  (use \"gitcad add <file>...\" to update what will be committed)")
 			for _, f := range unstaged {
 				fmt.Printf("  %s  %s\n", red("modified:"), red(f))
 			}
@@ -137,7 +137,7 @@ var statusCmd = &cobra.Command{
 
 		if len(untracked) > 0 {
 			fmt.Println("\nUntracked files:")
-			fmt.Println("  (use \"gitforcad add <file>...\" to include in what will be committed)")
+			fmt.Println("  (use \"gitcad add <file>...\" to include in what will be committed)")
 			for _, f := range untracked {
 				fmt.Printf("  %s\n", red(f))
 			}
